@@ -4,6 +4,20 @@ const models = require("../models")
 const { Op } = require("sequelize")
 const path = require("path")
 
+router.get('/phonebooks/:id', async function (req, res, next) {
+  try {
+    const id = req.params.id
+    const user = await models.User.findByPk(id);
+    if (!user) {
+      return res.status(404).json({ message: 'user not found' })
+    }
+    return res.status(200).json(user)
+  } catch (err) {
+    console.log('ini erorr dari get users get =>', err)
+    res.status(500).json({ err })
+  }
+});
+
 
 router.get('/phonebooks', async function (req, res, next) {
   try {
@@ -28,7 +42,7 @@ router.get('/phonebooks', async function (req, res, next) {
       total: count
     })
   } catch (err) {
-    console.log('ini erorr dari get users =>', err)
+    console.log('ini erorr dari get users get =>', err)
     res.status(500).json({ err })
   }
 });
@@ -36,11 +50,11 @@ router.get('/phonebooks', async function (req, res, next) {
 router.post('/phonebooks', async function (req, res, next) {
   try {
     const { name, phone } = req.body
-    if(!name && !phone) res.status(500).json(new Error("name and phone don't be empty"))
+    if (!name && !phone) res.status(500).json(new Error("name and phone don't be empty"))
     const users = await models.User.create({ name, phone });
     res.status(201).json(users)
   } catch (err) {
-    console.log('ini erorr dari get users =>', err)
+    console.log('ini erorr dari get users add =>', err)
     res.status(500).json({ err })
   }
 });
@@ -48,7 +62,6 @@ router.post('/phonebooks', async function (req, res, next) {
 router.delete('/phonebooks/:id', async function (req, res, next) {
   try {
     const id = req.params.id
-
     const user = await models.User.findOne({
       where: {
         id: id
@@ -65,7 +78,7 @@ router.delete('/phonebooks/:id', async function (req, res, next) {
     return res.status(200).json(user)
 
   } catch (err) {
-    console.log('ini erorr dari get users =>', err)
+    console.log('ini erorr dari get users delete =>', err)
     res.status(500).json({ err })
   }
 });
@@ -95,7 +108,7 @@ router.put('/phonebooks/:id', async function (req, res, next) {
     return res.status(201).json(updatedUser);
 
   } catch (err) {
-    console.log('ini erorr dari get users =>', err)
+    console.log('ini erorr dari get users edit data =>', err)
     res.status(500).json({ err })
   }
 });
@@ -103,29 +116,42 @@ router.put('/phonebooks/:id', async function (req, res, next) {
 router.put('/phonebooks/:id/avatar', async function (req, res, next) {
   try {
     const id = req.params.id
-    const { avatar } = req.body
+    let avatar;
+    let uploadPath;
 
-    // updated di eksekusi saat menjalankan operasi update 
-    const [updated] = await models.User.update({ avatar }, {
-      where: {
-        id: id
-      }
-    });
-
-    if (updated === 0) {
-      return res.status(404).json({ message: "User not found" });
+    if (!req.files || Object.keys(req.files).length == 0) {
+      return res.status(400).send('no file were uploaded')
     }
 
-    const updatedUser = await models.User.findOne({
-      where: {
-        id: id
+    avatar = req.files.avatar
+    let fileName = Date.now() + '_' + avatar.name
+    uploadPath = path.join(__dirname, '..', '..', 'phonebooks-reactredux', 'public', 'images', fileName)
+
+    avatar.mv(uploadPath, async function (err) {
+      if (err) {
+        return res.status(500).send('err upload file be', err)
       }
-    });
+      try {
+        const [updated] = await models.User.update({ avatar: fileName }, {
+          where: { id: id }
+        });
 
-    return res.status(200).json(updatedUser);
+        if (updated === 0) {
+          return res.status(404).json({ message: "User not found" });
+        }
 
+        const updatedUser = await models.User.findOne({
+          where: { id: id }
+        });
+
+        return res.status(200).json(updatedUser);
+      } catch (updateErr) {
+        console.log('Api, routes, avatar, line 135 => ', updateErr)
+        return res.status(500).json({ error: updateErr.message })
+      }
+    })
   } catch (err) {
-    console.log('ini erorr dari get users =>', err)
+    console.log('ini erorr dari get users edit avatar =>', err)
     res.status(500).json({ err })
   }
 });
