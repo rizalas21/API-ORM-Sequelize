@@ -36,9 +36,9 @@ router.get('/phonebooks', async function (req, res, next) {
     const pages = Math.ceil(count / limit)
     res.status(200).json({
       phonebooks: rows,
-      page,
-      limit,
-      pages,
+      page: Number(page),
+      limit: Number(limit),
+      pages: Number(pages),
       total: count
     })
   } catch (err) {
