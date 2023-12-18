@@ -21,7 +21,8 @@ router.get('/phonebooks/:id', async function (req, res, next) {
 
 router.get('/phonebooks', async function (req, res, next) {
   try {
-    const { page = 1, limit = 10, keyword = "", sort = "ASC" } = req.query
+    const { page = 1, limit = 30, keyword = "", sort = "ASC" } = req.query
+    console.log('keyword be -> ', keyword)
     const { count, rows } = await models.User.findAndCountAll({
       where: {
         [Op.or]: [
@@ -125,11 +126,12 @@ router.put('/phonebooks/:id/avatar', async function (req, res, next) {
 
     avatar = req.files.avatar
     let fileName = Date.now() + '_' + avatar.name
-    uploadPath = path.join(__dirname, '..', '..', 'phonebooks-reactredux', 'public', 'images', fileName)
+    uploadPath = path.join(__dirname, '..', '..', 'phonebooks-react', 'public', 'images', fileName)
 
     avatar.mv(uploadPath, async function (err) {
       if (err) {
-        return res.status(500).send('err upload file be', err)
+        console.log('Error uploading file', err)
+        return res.status(500).send(`Error uploading file: ${err.message}`)
       }
       try {
         const [updated] = await models.User.update({ avatar: fileName }, {
